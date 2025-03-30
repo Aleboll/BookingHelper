@@ -1,3 +1,5 @@
+import DataBase.SQLConnect;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -41,5 +43,6 @@ public class Main {
             frame.pack();
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
+            Connection connection = SQLConnect.connect();
         }
     }
