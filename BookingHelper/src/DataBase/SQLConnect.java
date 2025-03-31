@@ -42,4 +42,29 @@ public class SQLConnect {
         }
         return connection;
     }
+    public static boolean InitiateTables(){
+        Connection connection = connect();
+        if (connection != null) {
+            try {
+                java.sql.Statement statement = connection.createStatement();
+                String sql = "CREATE TABLE IF NOT EXISTS bookings " +
+                        "(id SERIAL PRIMARY KEY," +
+                        " name VARCHAR(255)," +
+                        " date VARCHAR(255)," +
+                        " time VARCHAR(255)," +
+                        " duration INT," +
+                        " roomid INT," +
+                        " type INT," +
+                        " status INT)";
+                statement.executeUpdate(sql);
+                System.out.println("Table initiated successfully");
+                return true;
+            } catch (SQLException e) {
+                System.out.println("Error creating table");
+                e.printStackTrace();
+                return false;
+            }
+        }
+        return false;
+    }
 }

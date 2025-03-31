@@ -1,10 +1,13 @@
 import DataBase.SQLConnect;
+import Week.Bookings;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import javax.swing.*;
 import java.awt.*;
+import java.util.Arrays;
+
 public class Main {
         public static void main(String[] args) {
             JFrame frame = new JFrame("BookMe");
@@ -44,5 +47,18 @@ public class Main {
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
             Connection connection = SQLConnect.connect();
+            SQLConnect.InitiateTables();
+            String[] booking = new String[7];
+            booking[0] = "John Doe";
+            booking[1] = "2023-10-01";
+            booking[2] = "10:00";
+            booking[3] = "2";
+            booking[4] = "101";
+            booking[5] = "1";
+            booking[6] = "0";
+
+            Bookings.AddBooking(booking);
+            Bookings booking1 = new Bookings(1);
+            System.out.println(Arrays.toString(booking1.ToStringArray()));
         }
     }
