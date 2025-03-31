@@ -12,7 +12,6 @@ public class SQLConnect {
 
     public static Connection connect () {
 
-        System.out.println("Testing connection to PostgreSQL JDBC");
 
         try {
             Class.forName("org.postgresql.Driver");
@@ -22,7 +21,6 @@ public class SQLConnect {
             return null;
         }
 
-        System.out.println("PostgreSQL JDBC Driver successfully connected");
         Connection connection = null;
 
         try {
@@ -36,34 +34,24 @@ public class SQLConnect {
         }
 
         if (connection != null) {
-            System.out.println("You successfully connected to database now");
+
         } else {
             System.out.println("Failed to make connection to database");
         }
         return connection;
     }
     public static boolean InitiateTables(){
-        Connection connection = connect();
-        if (connection != null) {
-            try {
-                java.sql.Statement statement = connection.createStatement();
-                String sql = "CREATE TABLE IF NOT EXISTS bookings " +
-                        "(id SERIAL PRIMARY KEY," +
-                        " name VARCHAR(255)," +
-                        " date VARCHAR(255)," +
-                        " time VARCHAR(255)," +
-                        " duration INT," +
-                        " roomid INT," +
-                        " type INT," +
-                        " status INT)";
-                statement.executeUpdate(sql);
-                System.out.println("Table initiated successfully");
-                return true;
-            } catch (SQLException e) {
-                System.out.println("Error creating table");
-                e.printStackTrace();
-                return false;
-            }
+        try {
+            Connection connection = connect();
+            assert connection != null;
+            java.sql.Statement statement = connection.createStatement();
+            String sql = "CREATE TABLE IF NOT EXISTS rooms (id SERIAL PRIMARY KEY, name VARCHAR(255), price INT, space INT, extra BOOLEAN, type INT)";
+            statement.executeUpdate(sql);
+            sql = "CREATE TABLE IF NOT EXISTS bookings (id SERIAL PRIMARY KEY, name VARCHAR(255), date DATE, time TIME, duration INT, roomid INT, type INT, status INT)";
+            statement.executeUpdate(sql);
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
         return false;
     }

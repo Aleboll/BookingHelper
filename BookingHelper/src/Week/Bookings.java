@@ -4,6 +4,8 @@ import DataBase.SQLConnect;
 
 import java.sql.Connection;
 
+import static Week.Rooms.IfRoomIsBooked;
+
 public class Bookings {
     private  String name;
     private  String date;
@@ -42,20 +44,8 @@ public class Bookings {
             e.printStackTrace();
         }
     }
-    public static boolean IfRoomIsBooked(String date, int room) {
-        try {
-            Connection connection = SQLConnect.connect();
-            assert connection != null;
-            java.sql.Statement statement = connection.createStatement();
-            String sql = "SELECT * FROM bookings WHERE date = '" + date + "' AND roomid = " + room;
-            java.sql.ResultSet resultSet = statement.executeQuery(sql);
-            return resultSet.next();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-    public String[] GetBookingByDayAndRoom(String date, int room){
+
+    public static String[] GetBookingByDayAndRoom(String date, int room){
         String[] booking = new String[7];
         try {
             Connection connection = SQLConnect.connect();
@@ -64,20 +54,13 @@ public class Bookings {
             String sql = "SELECT * FROM bookings WHERE date = '" + date + "' AND roomid = " + room;
             java.sql.ResultSet resultSet = statement.executeQuery(sql);
             if (resultSet.next()) {
-                this.name = resultSet.getString("name");
-                this.date = resultSet.getString("date");
-                this.time = resultSet.getString("time");
-                this.room = Integer.parseInt(resultSet.getString("roomid"));
-                this.duration = Integer.parseInt(resultSet.getString("duration"));
-                this.type = Integer.parseInt(resultSet.getString("type"));
-                this.status = Integer.parseInt(resultSet.getString("status"));
-                booking[0] = name;
-                booking[1] = date;
-                booking[2] = time;
-                booking[3] = String.valueOf(duration);
-                booking[4] = String.valueOf(room);
-                booking[5] = String.valueOf(type);
-                booking[6] = String.valueOf(status);
+                booking[0] = resultSet.getString("name");
+                booking[1] = resultSet.getString("date");
+                booking[2] = resultSet.getString("time");
+                booking[3] = String.valueOf(resultSet.getInt("duration"));
+                booking[4] = String.valueOf(resultSet.getInt("roomid"));
+                booking[5] = String.valueOf(resultSet.getInt("type"));
+                booking[6] = String.valueOf(resultSet.getInt("status"));
             }
         } catch (Exception e) {
             e.printStackTrace();
