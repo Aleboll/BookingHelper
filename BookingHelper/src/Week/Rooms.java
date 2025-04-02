@@ -82,4 +82,24 @@ public class Rooms {
         return false;
     }
 
+    public static String[] GetRoomById(int id) {
+        String[] room = new String[5];
+        try {
+            Connection connection = SQLConnect.connect();
+            assert connection != null;
+            java.sql.Statement statement = connection.createStatement();
+            String sql = "SELECT * FROM rooms WHERE id = " + id;
+            java.sql.ResultSet resultSet = statement.executeQuery(sql);
+            if (resultSet.next()) {
+                room[0] = resultSet.getString("name");
+                room[1] = String.valueOf(resultSet.getInt("price"));
+                room[2] = String.valueOf(resultSet.getInt("space"));
+                room[3] = String.valueOf(resultSet.getBoolean("extra"));
+                room[4] = String.valueOf(resultSet.getInt("type"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return room;
+    }
 }
