@@ -77,6 +77,19 @@ public enum Days {
         day = calendar.get(java.util.Calendar.DAY_OF_MONTH);
         return String.format("%04d-%02d-%02d", year, month, day);
     }
+    public static int getDaysBetweenDates(String startDate, String endDate) {
+        String[] startParts = startDate.split("-");
+        String[] endParts = endDate.split("-");
+
+        java.util.Calendar startCalendar = java.util.Calendar.getInstance();
+        startCalendar.set(Integer.parseInt(startParts[0]), Integer.parseInt(startParts[1]) - 1, Integer.parseInt(startParts[2]));
+
+        java.util.Calendar endCalendar = java.util.Calendar.getInstance();
+        endCalendar.set(Integer.parseInt(endParts[0]), Integer.parseInt(endParts[1]) - 1, Integer.parseInt(endParts[2]));
+
+        long diffInMillis = endCalendar.getTimeInMillis() - startCalendar.getTimeInMillis();
+        return (int) (diffInMillis / (1000 * 60 * 60 * 24));
+    }
     public  static String GetDateMinusSevenDays(String date) {
         String[] parts = date.split("-");
         int year = Integer.parseInt(parts[0]);

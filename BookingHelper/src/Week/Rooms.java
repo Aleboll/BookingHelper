@@ -152,6 +152,29 @@ public class Rooms {
         return room;
     }
 
+    public static String[] getRoomsNames() {
+        String[] roomNames = new String[getCountOfRooms()];
+        Connection connection = null;
+        Statement statement = null;
+        ResultSet resultSet = null;
+
+        try {
+            connection = SQLConnect.getConnection();
+            statement = connection.createStatement();
+            resultSet = statement.executeQuery("SELECT name FROM rooms");
+
+            int index = 0;
+            while (resultSet.next()) {
+                roomNames[index++] = resultSet.getString("name");
+            }
+        } catch (SQLException e) {
+            System.err.println("Ошибка при получении названий комнат: " + e.getMessage());
+        } finally {
+            closeResources(resultSet, statement);
+            SQLConnect.releaseConnection(connection);
+        }
+        return roomNames;
+    }
     private static void closeResources(ResultSet resultSet, Statement statement) {
         try {
             if (resultSet != null) {
@@ -162,6 +185,31 @@ public class Rooms {
             }
         } catch (SQLException e) {
             System.err.println("Ошибка при закрытии ресурсов: " + e.getMessage());
+        }
+    }
+
+    public static int getRoomId(String roomName) {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+
+        try {
+            connection = SQLConnect.getConnection();
+            String sql = "SELECT id FROM rooms WHERE name = ?";
+            statement = connection.prepareStatement(sql);
+            statement.setString(1, roomName);
+            resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                return resultSet.getInt("id");
+            }
+            return -1; // Комната не найдена
+        } catch (SQLException e) {
+            System.err.println("Ошибка при получении ID комнаты: " + e.getMessage());
+            return -1;
+        } finally {
+            closeResources(resultSet, statement);
+            SQLConnect.releaseConnection(connection);
         }
     }
 

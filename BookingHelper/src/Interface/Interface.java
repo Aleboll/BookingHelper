@@ -59,7 +59,7 @@ public class Interface {
 
         addBookingButton.addActionListener(e -> {
             // Логика добавления бронирования
-            System.out.println("Добавление бронирования...");
+            AdBookingMenu.showAdBookingMenu();
         });
 
         deleteBookingButton.addActionListener(e -> {
@@ -89,23 +89,33 @@ public class Interface {
     private static JPanel createCalendarPanel(String startDate) {
         String[] weekDates = Days.GetWeekDates(startDate);
         int roomCount = Rooms.getCountOfRooms();
-        JPanel panel = new JPanel(new GridLayout(roomCount + 1, WEEK_DAYS.length));
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+
+        gbc.fill = GridBagConstraints.NONE; // Не растягивать компоненты
+        gbc.anchor = GridBagConstraints.NORTHWEST;
+        gbc.insets = new Insets(2, 2, 2, 2);
 
         // Добавление заголовков
-        for (String day : WEEK_DAYS) {
-            panel.add(createCalendarCell(day, true));
+        for (int i = 0; i < WEEK_DAYS.length; i++) {
+            gbc.gridx = i;
+            gbc.gridy = 0;
+            panel.add(createCalendarCell(WEEK_DAYS[i], true), gbc);
         }
 
-        // Добавление данных о комнатах
+        // Добавление данных
         for (int roomId = 1; roomId <= roomCount; roomId++) {
-            panel.add(createCalendarCell(Rooms.getRoomById(roomId)[0], true));
+            gbc.gridx = 0;
+            gbc.gridy = roomId;
+            panel.add(createCalendarCell(Rooms.getRoomById(roomId)[0], true), gbc);
 
             for (int dayIndex = 1; dayIndex < WEEK_DAYS.length; dayIndex++) {
+                gbc.gridx = dayIndex;
                 if (dayIndex-1 < weekDates.length && Rooms.isRoomBooked(weekDates[dayIndex-1], roomId)) {
                     String bookingInfo = Bookings.getBookingByDayAndRoom(weekDates[dayIndex-1], roomId)[0];
-                    panel.add(createCalendarCell(bookingInfo, false));
+                    panel.add(createCalendarCell(bookingInfo, false), gbc);
                 } else {
-                    panel.add(createCalendarCell("", false));
+                    panel.add(createCalendarCell("", false), gbc);
                 }
             }
         }
@@ -113,15 +123,18 @@ public class Interface {
         return panel;
     }
 
-    private static JTextArea createCalendarCell(String text, boolean isHeader) {
-        JTextArea cell = new JTextArea(text);
-        cell.setEditable(false);
-        cell.setLineWrap(true);
-        cell.setWrapStyleWord(true);
+    private static JLabel createCalendarCell(String text, boolean isHeader) {
+        JLabel cell = new JLabel("<html><div style='text-align: center;'>" + text.replace("\n", "<br/>") + "</div></html>");
         cell.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+        cell.setPreferredSize(new Dimension(100, 80));
+
+        // Центрирование по горизонтали и вертикали
+        cell.setHorizontalAlignment(SwingConstants.CENTER);
+        cell.setVerticalAlignment(SwingConstants.CENTER);
 
         if (isHeader) {
             cell.setBackground(new Color(240, 240, 240));
+            cell.setOpaque(true);
             cell.setFont(cell.getFont().deriveFont(Font.BOLD));
         }
 
