@@ -63,4 +63,32 @@ public enum Days {
         }
         return weekDates;
     }
+    public static String GetDatePlusSevenDays(String date) {
+        String[] parts = date.split("-");
+        int year = Integer.parseInt(parts[0]);
+        int month = Integer.parseInt(parts[1]);
+        int day = Integer.parseInt(parts[2]);
+
+        java.util.Calendar calendar = java.util.Calendar.getInstance();
+        calendar.set(year, month - 1, day);
+        calendar.add(java.util.Calendar.DAY_OF_MONTH, 7);
+        year = calendar.get(java.util.Calendar.YEAR);
+        month = calendar.get(java.util.Calendar.MONTH) + 1;
+        day = calendar.get(java.util.Calendar.DAY_OF_MONTH);
+        return String.format("%04d-%02d-%02d", year, month, day);
+    }
+    public  static String GetDateMinusSevenDays(String date) {
+        String[] parts = date.split("-");
+        int year = Integer.parseInt(parts[0]);
+        int month = Integer.parseInt(parts[1]);
+        int day = Integer.parseInt(parts[2]);
+
+        java.util.Calendar calendar = java.util.Calendar.getInstance();
+        calendar.set(year, month - 1, day);
+        calendar.add(java.util.Calendar.DAY_OF_MONTH, -7);
+        year = calendar.get(java.util.Calendar.YEAR);
+        month = calendar.get(java.util.Calendar.MONTH) + 1;
+        day = calendar.get(java.util.Calendar.DAY_OF_MONTH);
+        return String.format("%04d-%02d-%02d", year, month, day);
+    }
 }

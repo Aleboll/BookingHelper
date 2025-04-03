@@ -1,19 +1,20 @@
 package Week;
 
 import DataBase.SQLConnect;
-
 import java.sql.Connection;
-
-import static Week.Rooms.IfRoomIsBooked;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class Bookings {
-    private  String name;
-    private  String date;
-    private  String time;
-    private  int duration;
-    private  int room;
-    private  int type;
-    private  int status;
+    private String name;
+    private String date;
+    private String time;
+    private int duration;
+    private int room;
+    private int type;
+    private int status;
 
     public Bookings(String name, String date, String time, int duration, int room, int type, int status) {
         this.name = name;
@@ -24,35 +25,50 @@ public class Bookings {
         this.type = type;
         this.status = status;
     }
+
     public Bookings(int id) {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+
         try {
-            Connection connection = SQLConnect.connect();
-            assert connection != null;
-            java.sql.Statement statement = connection.createStatement();
-            String sql = "SELECT * FROM bookings WHERE id = " + id;
-            java.sql.ResultSet resultSet = statement.executeQuery(sql);
+            connection = SQLConnect.getConnection();
+            String sql = "SELECT * FROM bookings WHERE id = ?";
+            statement = connection.prepareStatement(sql);
+            statement.setInt(1, id);
+            resultSet = statement.executeQuery();
+
             if (resultSet.next()) {
                 this.name = resultSet.getString("name");
                 this.date = resultSet.getString("date");
                 this.time = resultSet.getString("time");
-                this.room = Integer.parseInt(resultSet.getString("roomid"));
-                this.duration = Integer.parseInt(resultSet.getString("duration"));
-                this.type = Integer.parseInt(resultSet.getString("type"));
-                this.status = Integer.parseInt(resultSet.getString("status"));
+                this.room = resultSet.getInt("roomid");
+                this.duration = resultSet.getInt("duration");
+                this.type = resultSet.getInt("type");
+                this.status = resultSet.getInt("status");
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (SQLException e) {
+            System.err.println("Ошибка при загрузке бронирования: " + e.getMessage());
+        } finally {
+            closeResources(resultSet, statement);
+            SQLConnect.releaseConnection(connection);
         }
     }
 
-    public static String[] GetBookingByDayAndRoom(String date, int room){
+    public static String[] getBookingByDayAndRoom(String date, int room) {
         String[] booking = new String[7];
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+
         try {
-            Connection connection = SQLConnect.connect();
-            assert connection != null;
-            java.sql.Statement statement = connection.createStatement();
-            String sql = "SELECT * FROM bookings WHERE date = '" + date + "' AND roomid = " + room;
-            java.sql.ResultSet resultSet = statement.executeQuery(sql);
+            connection = SQLConnect.getConnection();
+            String sql = "SELECT * FROM bookings WHERE date = ? AND roomid = ?";
+            statement = connection.prepareStatement(sql);
+            statement.setString(1, date);
+            statement.setInt(2, room);
+            resultSet = statement.executeQuery();
+
             if (resultSet.next()) {
                 booking[0] = resultSet.getString("name");
                 booking[1] = resultSet.getString("date");
@@ -62,61 +78,76 @@ public class Bookings {
                 booking[5] = String.valueOf(resultSet.getInt("type"));
                 booking[6] = String.valueOf(resultSet.getInt("status"));
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (SQLException e) {
+            System.err.println("Ошибка при получении бронирования: " + e.getMessage());
+        } finally {
+            closeResources(resultSet, statement);
+            SQLConnect.releaseConnection(connection);
         }
         return booking;
     }
-    public static boolean AddBooking(String[] booking){
-        if (IfRoomIsBooked(booking[1], Integer.parseInt(booking[4]))) {
-            System.out.println("Room is already booked");
+
+    public static boolean addBooking(String[] booking) {
+        if (Rooms.isRoomBooked(booking[1], Integer.parseInt(booking[4]))) {
+            System.out.println("Комната уже забронирована");
             return false;
         }
+
+        Connection connection = null;
+        PreparedStatement statement = null;
+
         try {
-            Connection connection = SQLConnect.connect();
-            assert connection != null;
-            java.sql.Statement statement = connection.createStatement();
-            String sql = "INSERT INTO bookings (name, date, time, duration, roomid, type, status) VALUES ('" + booking[0] + "', '" + booking[1] + "', '" + booking[2] + "', " + booking[3] + ", " + booking[4] + ", " + booking[5] + ", " + booking[6] + ")";
-            statement.executeUpdate(sql);
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
+            connection = SQLConnect.getConnection();
+            String sql = "INSERT INTO bookings (name, date, time, duration, roomid, type, status) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)";
+            statement = connection.prepareStatement(sql);
+
+            statement.setString(1, booking[0]);
+            statement.setString(2, booking[1]);
+            statement.setString(3, booking[2]);
+            statement.setInt(4, Integer.parseInt(booking[3]));
+            statement.setInt(5, Integer.parseInt(booking[4]));
+            statement.setInt(6, Integer.parseInt(booking[5]));
+            statement.setInt(7, Integer.parseInt(booking[6]));
+
+            int affectedRows = statement.executeUpdate();
+            return affectedRows > 0;
+        } catch (SQLException e) {
+            System.err.println("Ошибка при добавлении бронирования: " + e.getMessage());
+            return false;
+        } finally {
+            closeResources(null, statement);
+            SQLConnect.releaseConnection(connection);
         }
-        return false;
-    }
-    public String[] ToStringArray() {
-        String[] booking = new String[7];
-        booking[0] = name;
-        booking[1] = date;
-        booking[2] = time;
-        booking[3] = String.valueOf(duration);
-        booking[4] = String.valueOf(room);
-        booking[5] = String.valueOf(type);
-        booking[6] = String.valueOf(status);
-        return booking;
-    }
-    public String getName() {
-        return name;
     }
 
-    public String getDate() {
-        return date;
+    private static void closeResources(ResultSet resultSet, Statement statement) {
+        try {
+            if (resultSet != null) resultSet.close();
+            if (statement != null) statement.close();
+        } catch (SQLException e) {
+            System.err.println("Ошибка при закрытии ресурсов: " + e.getMessage());
+        }
     }
 
-    public String getTime() {
-        return time;
+    public String[] toStringArray() {
+        return new String[] {
+                name,
+                date,
+                time,
+                String.valueOf(duration),
+                String.valueOf(room),
+                String.valueOf(type),
+                String.valueOf(status)
+        };
     }
 
-    public int getDuration() {
-        return duration;
-    }
-
-    public int getType() {
-        return type;
-    }
-
-    public int getStatus() {
-        return status;
-    }
-
+    // Геттеры
+    public String getName() { return name; }
+    public String getDate() { return date; }
+    public String getTime() { return time; }
+    public int getDuration() { return duration; }
+    public int getType() { return type; }
+    public int getStatus() { return status; }
+    public int getRoom() { return room; }
 }

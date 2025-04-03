@@ -14,10 +14,10 @@ import java.util.Arrays;
 public class Main {
         public static void main(String[] args) {
             SQLConnect.InitiateTables();
-            Interface.InitiateInterface();
+            Interface.initiateInterface();
 
             Bookings booking1 = new Bookings(1);
-            System.out.println(Arrays.toString(booking1.ToStringArray()));
+            System.out.println(Arrays.toString(booking1.toStringArray()));
             System.out.println(Days.GetTodaysWeekBeginingDate());
         }
     }

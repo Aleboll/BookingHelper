@@ -1,149 +1,204 @@
 package Interface;
-import Week.Bookings;
-import Week.Rooms;
 
+import DataBase.SQLConnect;
+import Week.Bookings;
+import Week.Days;
+import Week.Rooms;
 import javax.swing.*;
 import java.awt.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class Interface {
-    public static void InitiateInterface() {
-        // Create the main frame
-        JFrame frame = new JFrame("BookMe");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    private static final String[] WEEK_DAYS = {"Room", "Monday", "Tuesday", "Wednesday",
+            "Thursday", "Friday", "Saturday", "Sunday"};
+    private static final Dimension SCROLL_PANE_SIZE = new Dimension(1200, 600);
+    private static final int BUTTON_SPACING = 10;
+    private static volatile boolean isUpdating = false;
 
-        String[] days = {"Room", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
-        String[] weekDates = Week.Days.GetWeekDates(Week.Days.GetTodaysWeekBeginingDate());
-
-        int roomCount = Rooms.GetCountOfRooms();
-        String[][] data = new String[roomCount + 1][8]; // +1 для заголовка
-
-        // Инициализация массива пустыми строками
-        for (int i = 0; i < data.length; i++) {
-            for (int j = 0; j < data[i].length; j++) {
-                data[i][j] = "";
-            }
+    public static void initiateInterface() {
+        // Инициализация базы данных
+        if (!SQLConnect.InitiateTables()) {
+            showErrorDialog("Ошибка при инициализации базы данных");
+            return;
         }
 
-        // Заполняем заголовки дней
-        System.arraycopy(days, 0, data[0], 0, Math.min(days.length, 8));
+        try {
+            // Создание главного окна
+            JFrame mainFrame = createMainFrame();
+            AtomicReference<String> selectedDate = new AtomicReference<>(Days.GetTodaysWeekBeginingDate());
 
-        // Заполняем данные о комнатах и бронированиях
-        for (int i = 1; i <= roomCount; i++) {
-            // Название комнаты (индекс i-1, так как комнаты нумеруются с 1)
-            String[] roomInfo = Rooms.GetRoomById(i);
-            data[i][0] = (roomInfo != null && roomInfo.length > 0) ? roomInfo[0] : "Room " + i;
+            // Создание компонентов интерфейса
+            JScrollPane calendarScrollPane = createCalendarScrollPane(selectedDate.get());
+            JPanel weekNavigationPanel = createWeekNavigationPanel(selectedDate, calendarScrollPane, mainFrame);
+            JPanel bookingManagementPanel = createBookingManagementPanel();
 
-            for (int j = 1; j < 8; j++) {
-                if (j-1 < weekDates.length && Rooms.IfRoomIsBooked(weekDates[j-1], i)) {
-                    String[] bookingInfo = Bookings.GetBookingByDayAndRoom(weekDates[j-1], i);
-                    data[i][j] = (bookingInfo != null && bookingInfo.length > 0) ? bookingInfo[0] : "";
+            // Компоновка интерфейса
+            assembleInterface(mainFrame, weekNavigationPanel, calendarScrollPane, bookingManagementPanel);
+
+            // Обработка закрытия окна
+            mainFrame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+            mainFrame.addWindowListener(new java.awt.event.WindowAdapter() {
+                @Override
+                public void windowClosing(java.awt.event.WindowEvent e) {
+                    SQLConnect.closeAllConnections();
+                    mainFrame.dispose();
+                }
+            });
+
+            displayMainFrame(mainFrame);
+        } catch (Exception e) {
+            showErrorDialog("Ошибка при создании интерфейса: " + e.getMessage());
+            SQLConnect.closeAllConnections();
+        }
+    }
+
+    private static JPanel createBookingManagementPanel() {
+        JPanel bookingPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, BUTTON_SPACING, BUTTON_SPACING));
+        JButton addBookingButton = new JButton("Добавить бронь");
+        JButton deleteBookingButton = new JButton("Удалить бронь");
+
+        addBookingButton.addActionListener(e -> {
+            // Логика добавления бронирования
+            System.out.println("Добавление бронирования...");
+        });
+
+        deleteBookingButton.addActionListener(e -> {
+            // Логика удаления бронирования
+            System.out.println("Удаление бронирования...");
+        });
+
+        bookingPanel.add(addBookingButton);
+        bookingPanel.add(deleteBookingButton);
+        return bookingPanel;
+    }
+
+    private static JFrame createMainFrame() {
+        JFrame frame = new JFrame("BookMe - Система бронирования");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setMinimumSize(new Dimension(800, 600));
+        return frame;
+    }
+
+    private static JScrollPane createCalendarScrollPane(String startDate) {
+        JPanel calendarPanel = createCalendarPanel(startDate);
+        JScrollPane scrollPane = new JScrollPane(calendarPanel);
+        scrollPane.setPreferredSize(SCROLL_PANE_SIZE);
+        return scrollPane;
+    }
+
+    private static JPanel createCalendarPanel(String startDate) {
+        String[] weekDates = Days.GetWeekDates(startDate);
+        int roomCount = Rooms.getCountOfRooms();
+        JPanel panel = new JPanel(new GridLayout(roomCount + 1, WEEK_DAYS.length));
+
+        // Добавление заголовков
+        for (String day : WEEK_DAYS) {
+            panel.add(createCalendarCell(day, true));
+        }
+
+        // Добавление данных о комнатах
+        for (int roomId = 1; roomId <= roomCount; roomId++) {
+            panel.add(createCalendarCell(Rooms.getRoomById(roomId)[0], true));
+
+            for (int dayIndex = 1; dayIndex < WEEK_DAYS.length; dayIndex++) {
+                if (dayIndex-1 < weekDates.length && Rooms.isRoomBooked(weekDates[dayIndex-1], roomId)) {
+                    String bookingInfo = Bookings.getBookingByDayAndRoom(weekDates[dayIndex-1], roomId)[0];
+                    panel.add(createCalendarCell(bookingInfo, false));
+                } else {
+                    panel.add(createCalendarCell("", false));
                 }
             }
         }
 
-        JPanel mainPanel = new JPanel(new GridLayout(roomCount + 1, 8)); // +1 для заголовка
+        return panel;
+    }
 
-        // Добавляем компоненты в панель
-        for (int i = 0; i < data.length; i++) {
-            for (int j = 0; j < data[i].length; j++) {
-                JTextArea textArea = new JTextArea(data[i][j]);
-                textArea.setEditable(false); // Делаем текст нередактируемым
-                textArea.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-                mainPanel.add(textArea);
-            }
+    private static JTextArea createCalendarCell(String text, boolean isHeader) {
+        JTextArea cell = new JTextArea(text);
+        cell.setEditable(false);
+        cell.setLineWrap(true);
+        cell.setWrapStyleWord(true);
+        cell.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+
+        if (isHeader) {
+            cell.setBackground(new Color(240, 240, 240));
+            cell.setFont(cell.getFont().deriveFont(Font.BOLD));
         }
 
-        // Создание панели для календаря
-        JPanel calendarPanel = new JPanel();
-        calendarPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); // Отступы
-        calendarPanel.setLayout(new BorderLayout());
-        calendarPanel.add(mainPanel);
+        return cell;
+    }
 
-        // Создание панели для кнопок управления неделями
-        JPanel weekControlPanel = new JPanel();
-        weekControlPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10)); // Отступы между кнопками
+    private static JPanel createWeekNavigationPanel(AtomicReference<String> selectedDate,
+                                                    JScrollPane scrollPane,
+                                                    JFrame frame) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, BUTTON_SPACING, BUTTON_SPACING));
 
-        JButton previousWeekButton = new JButton("Previous Week");
-        previousWeekButton.addActionListener(e -> {
-            // Логика перехода к предыдущей неделе
-            System.out.println("Previous Week button clicked");
+        panel.add(createNavButton("Предыдущая", () -> {
+            selectedDate.set(Days.GetDateMinusSevenDays(selectedDate.get()));
+            updateCalendar(selectedDate.get(), scrollPane);
+        }));
+
+        panel.add(createNavButton("Сегодня", () -> {
+            selectedDate.set(Days.GetTodaysWeekBeginingDate());
+            updateCalendar(selectedDate.get(), scrollPane);
+        }));
+
+        panel.add(createNavButton("Следующая", () -> {
+            selectedDate.set(Days.GetDatePlusSevenDays(selectedDate.get()));
+            updateCalendar(selectedDate.get(), scrollPane);
+        }));
+
+        return panel;
+    }
+
+    private static JButton createNavButton(String text, Runnable action) {
+        JButton button = new JButton(text);
+        button.addActionListener(e -> {
+            if (!isUpdating) {
+                isUpdating = true;
+                new SwingWorker<Void, Void>() {
+                    @Override
+                    protected Void doInBackground() throws Exception {
+                        action.run();
+                        return null;
+                    }
+
+                    @Override
+                    protected void done() {
+                        isUpdating = false;
+                    }
+                }.execute();
+            }
         });
-        JButton todayButton = new JButton("Today");
-        todayButton.addActionListener(e -> {
-            // Логика перехода к текущей неделе
-            System.out.println("Today button clicked");
+        return button;
+    }
+
+    private static void updateCalendar(String date, JScrollPane scrollPane) {
+        SwingUtilities.invokeLater(() -> {
+            scrollPane.setViewportView(createCalendarPanel(date));
         });
-        JButton nextWeekButton = new JButton("Next Week");
-        nextWeekButton.addActionListener(e -> {
-            // Логика перехода к следующей неделе
-            System.out.println("Next Week button clicked");
-        });
+    }
 
-        weekControlPanel.add(previousWeekButton);
-        weekControlPanel.add(todayButton);
-        weekControlPanel.add(nextWeekButton);
-
-        // Создание панели для кнопок управления бронированием
-        JPanel bookingControlPanel = new JPanel();
-        bookingControlPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10)); // Отступы между кнопками
-
-        JButton addBookingButton = new JButton("Add Booking");
-        addBookingButton.addActionListener(e -> {
-            // Логика добавления бронирования
-            System.out.println("Add Booking button clicked");
-        });
-        JButton deleteBookingButton = new JButton("Delete Booking");
-        deleteBookingButton.addActionListener(e -> {
-            // Логика удаления бронирования
-            System.out.println("Delete Booking button clicked");
-        });
-        JButton editBookingButton = new JButton("Edit Booking");
-        editBookingButton.addActionListener(e -> {
-            // Логика редактирования бронирования
-            System.out.println("Edit Booking button clicked");
-        });
-
-        bookingControlPanel.add(addBookingButton);
-        bookingControlPanel.add(deleteBookingButton);
-        bookingControlPanel.add(editBookingButton);
-
-        // Настройка скроллинга
-        JScrollPane scrollPane = new JScrollPane(mainPanel);
-        scrollPane.setPreferredSize(new Dimension(1200, 600));
-
-        // Добавление панелей в основной фрейм
-        frame.setLayout(new BorderLayout());
-        // Удалите эту строку, так как calendarPanel уже содержит mainPanel
-// frame.add(calendarPanel, BorderLayout.NORTH);
-
-// Создаем основную панель для всего содержимого
+    private static void assembleInterface(JFrame frame, JPanel weekPanel,
+                                          JScrollPane calendarPane, JPanel bookingPanel) {
         JPanel contentPanel = new JPanel(new BorderLayout());
-
-// Добавляем панель управления неделями в верхнюю часть
-        contentPanel.add(weekControlPanel, BorderLayout.NORTH);
-
-// Добавляем скроллируемую панель с календарем в центр
-        contentPanel.add(scrollPane, BorderLayout.CENTER);
-
-// Создаем панель для кнопок управления бронированием
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.add(bookingControlPanel, BorderLayout.CENTER);
-// Можно добавить другие компоненты в bottomPanel при необходимости
-
-// Добавляем нижнюю панель
-        contentPanel.add(bottomPanel, BorderLayout.SOUTH);
-
-// Добавляем основную панель в фрейм
+        contentPanel.add(weekPanel, BorderLayout.NORTH);
+        contentPanel.add(calendarPane, BorderLayout.CENTER);
+        contentPanel.add(bookingPanel, BorderLayout.SOUTH);
         frame.add(contentPanel);
+    }
 
-// Установите предпочтительный размер для scrollPane
-        scrollPane.setPreferredSize(new Dimension(1200, 400));
+    private static void displayMainFrame(JFrame frame) {
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
-        // Настройка скроллинга
+    }
 
+    private static void showErrorDialog(String message) {
+        JOptionPane.showMessageDialog(null, message, "Ошибка", JOptionPane.ERROR_MESSAGE);
+    }
 
-
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(Interface::initiateInterface);
     }
 }
