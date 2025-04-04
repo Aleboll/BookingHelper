@@ -61,7 +61,8 @@ public class Rooms {
             connection = SQLConnect.getConnection();
             String sql = "SELECT COUNT(*) FROM booking_dates WHERE date = ? AND roomid = ?";
             statement = connection.prepareStatement(sql);
-            statement.setString(1, date);
+            java.sql.Date sqlDate = java.sql.Date.valueOf(date);
+            statement.setDate(1, sqlDate);
             statement.setInt(2, room);
             resultSet = statement.executeQuery();
             if (resultSet.next()) {

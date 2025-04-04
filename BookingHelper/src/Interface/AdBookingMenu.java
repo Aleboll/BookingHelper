@@ -106,7 +106,7 @@ public class AdBookingMenu {
         JButton addButton = new JButton("Добавить бронь");
         addButton.setFont(new Font("Arial", Font.BOLD, 14));
         addButton.setBackground(new Color(0, 0, 0));
-        addButton.setForeground(Color.WHITE);
+        addButton.setForeground(Color.BLACK);
         addButton.addActionListener(e -> {
             String name = nameField.getText();
             String roomName = (String) roomComboBox.getSelectedItem();

@@ -98,7 +98,7 @@ public class Interface {
         JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
 
-        gbc.fill = GridBagConstraints.NONE; // Не растягивать компоненты
+        gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.NORTHWEST;
         gbc.insets = new Insets(2, 2, 2, 2);
 
@@ -106,22 +106,22 @@ public class Interface {
         for (int i = 0; i < WEEK_DAYS.length; i++) {
             gbc.gridx = i;
             gbc.gridy = 0;
-            panel.add(createCalendarCell(WEEK_DAYS[i], true), gbc);
+            String date = (i > 0 && i-1 < weekDates.length) ? formatDate(weekDates[i-1]) : null;
+            panel.add(createCalendarCell(WEEK_DAYS[i], true, date, false), gbc);
         }
 
-        // Добавление данных
         for (int roomId = 1; roomId <= roomCount; roomId++) {
             gbc.gridx = 0;
             gbc.gridy = roomId;
-            panel.add(createCalendarCell(Rooms.getRoomById(roomId)[0], true), gbc);
+            panel.add(createCalendarCell(Rooms.getRoomById(roomId)[0], true, null, false), gbc);
 
             for (int dayIndex = 1; dayIndex < WEEK_DAYS.length; dayIndex++) {
                 gbc.gridx = dayIndex;
                 if (dayIndex-1 < weekDates.length && Rooms.isRoomBooked(weekDates[dayIndex-1], roomId)) {
                     String bookingInfo = Bookings.getBookingById(Days.getBookingIdByDayAndRoom(weekDates[dayIndex-1], roomId))[0];
-                    panel.add(createCalendarCell(bookingInfo, false), gbc);
+                    panel.add(createCalendarCell(bookingInfo, false, null, true), gbc);
                 } else {
-                    panel.add(createCalendarCell("", false), gbc);
+                    panel.add(createCalendarCell("", false, null, false), gbc);
                 }
             }
         }
@@ -129,21 +129,51 @@ public class Interface {
         return panel;
     }
 
-    private static JLabel createCalendarCell(String text, boolean isHeader) {
-        JLabel cell = new JLabel("<html><div style='text-align: center;'>" + text.replace("\n", "<br/>") + "</div></html>");
+    // Вспомогательный метод для форматирования даты
+    private static String formatDate(String date) {
+        try {
+            // Предполагаем, что date в формате yyyy-MM-dd
+            String[] parts = date.split("-");
+            if (parts.length == 3) {
+                return String.format("%s.%s.%s", parts[2], parts[1], parts[0]);
+            }
+        } catch (Exception e) {
+            // В случае ошибки просто вернем исходную дату
+        }
+        return date;
+    }
+
+    private static JLabel createCalendarCell(String text, boolean isHeader, String date, boolean isBooked) {
+        String cellContent;
+        if (isHeader && date != null) {
+            // Для заголовка добавляем дату мелким шрифтом сверху
+            cellContent = String.format("<html><div style='text-align: center;'><small>%s</small><br/>%s</div></html>",
+                    date, text.replace("\n", "<br/>"));
+        } else {
+            cellContent = String.format("<html><div style='text-align: center;'>%s</div></html>",
+                    text.replace("\n", "<br/>"));
+        }
+
+        JLabel cell = new JLabel(cellContent);
         cell.setBorder(BorderFactory.createLineBorder(Color.GRAY));
         cell.setPreferredSize(new Dimension(100, 80));
-
-        // Центрирование по горизонтали и вертикали
         cell.setHorizontalAlignment(SwingConstants.CENTER);
         cell.setVerticalAlignment(SwingConstants.CENTER);
 
+
+        if (isBooked) {
+            cell.setBackground(new Color(108, 151, 207));
+            cell.setOpaque(true);
+        } else {
+            cell.setBackground(Color.WHITE);
+            cell.setOpaque(true);
+        }
         if (isHeader) {
-            cell.setBackground(new Color(240, 240, 240));
+            cell.setBackground(new Color(19, 95, 193));
             cell.setOpaque(true);
             cell.setFont(cell.getFont().deriveFont(Font.BOLD));
+            cell.setForeground(Color.WHITE);
         }
-
         return cell;
     }
 

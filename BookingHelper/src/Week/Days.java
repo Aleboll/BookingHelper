@@ -119,7 +119,9 @@ public enum Days {
                     "VALUES (?, ?, ?)";
             statement = connection.prepareStatement(sql);
 
-            statement.setString(1, date[0]);
+            java.sql.Date sqlDate = java.sql.Date.valueOf(date[0]);
+
+            statement.setDate(1, sqlDate);
             statement.setInt(2, Integer.parseInt(date[1]));
             statement.setInt(3, Integer.parseInt(date[2]));
 
@@ -154,7 +156,8 @@ public enum Days {
             connection = SQLConnect.getConnection();
             String sql = "SELECT bookid FROM booking_dates WHERE date = ? AND roomid = ?";
             statement = connection.prepareStatement(sql);
-            statement.setString(1, date);
+            java.sql.Date sqlDate = java.sql.Date.valueOf(date);
+            statement.setDate(1, sqlDate);
             statement.setInt(2, room);
             resultSet = statement.executeQuery();
             if (resultSet.next()) {

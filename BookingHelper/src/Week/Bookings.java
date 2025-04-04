@@ -40,8 +40,8 @@ public class Bookings {
 
             if (resultSet.next()) {
                 this.name = resultSet.getString("name");
-                this.date = resultSet.getString("date");
-                this.time = resultSet.getString("time");
+                this.date = String.valueOf(resultSet.getDate("date"));
+                this.time = String.valueOf(resultSet.getTime("time"));
                 this.room = resultSet.getInt("roomid");
                 this.duration = resultSet.getInt("duration");
                 this.type = resultSet.getInt("type");
@@ -65,14 +65,15 @@ public class Bookings {
             connection = SQLConnect.getConnection();
             String sql = "SELECT * FROM bookings WHERE date = ? AND roomid = ?";
             statement = connection.prepareStatement(sql);
-            statement.setString(1, date);
+            java.sql.Date sqlDate = java.sql.Date.valueOf(date);
+            statement.setDate(1, sqlDate);
             statement.setInt(2, room);
             resultSet = statement.executeQuery();
 
             if (resultSet.next()) {
                 booking[0] = resultSet.getString("name");
-                booking[1] = resultSet.getString("date");
-                booking[2] = resultSet.getString("time");
+                booking[1] = String.valueOf(resultSet.getDate("date"));
+                booking[2] = String.valueOf(resultSet.getTime("time"));
                 booking[3] = String.valueOf(resultSet.getInt("duration"));
                 booking[4] = String.valueOf(resultSet.getInt("roomid"));
                 booking[5] = String.valueOf(resultSet.getInt("type"));
@@ -102,10 +103,12 @@ public class Bookings {
             String sql = "INSERT INTO bookings (name, date, time, duration, roomid, type, status) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?)";
             statement = connection.prepareStatement(sql);
+            java.sql.Time timeValue = java.sql.Time.valueOf(booking[2] + ":00"); // Add seconds if missing
+            java.sql.Date dateValue = java.sql.Date.valueOf(booking[1]); // Convert to java.sql.Date
 
             statement.setString(1, booking[0]);
-            statement.setString(2, booking[1]);
-            statement.setString(3, booking[2]);
+            statement.setDate(2, dateValue);
+            statement.setTime(3, timeValue);
             statement.setInt(4, Integer.parseInt(booking[3]));
             statement.setInt(5, Integer.parseInt(booking[4]));
             statement.setInt(6, Integer.parseInt(booking[5]));
@@ -157,8 +160,8 @@ public class Bookings {
 
             if (resultSet.next()) {
                 booking[0] = resultSet.getString("name");
-                booking[1] = resultSet.getString("date");
-                booking[2] = resultSet.getString("time");
+                booking[1] = String.valueOf(resultSet.getDate("date"));
+                booking[2] = String.valueOf(resultSet.getTime("time"));
                 booking[3] = String.valueOf(resultSet.getInt("duration"));
                 booking[4] = String.valueOf(resultSet.getInt("roomid"));
                 booking[5] = String.valueOf(resultSet.getInt("type"));

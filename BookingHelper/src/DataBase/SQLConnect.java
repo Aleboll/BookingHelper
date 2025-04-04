@@ -94,7 +94,7 @@ public class SQLConnect {
 
             String bookingDatesTableSQL = "CREATE TABLE IF NOT EXISTS booking_dates (" +
                     "id SERIAL PRIMARY KEY, " +
-                    "date VARCHAR(10), " +
+                    "date DATE, " +
                     "roomid INT, " +
                     "bookid INT)";
             statement.executeUpdate(bookingDatesTableSQL);
