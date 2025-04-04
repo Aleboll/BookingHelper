@@ -105,7 +105,7 @@ public class AdBookingMenu {
 
         JButton addButton = new JButton("Добавить бронь");
         addButton.setFont(new Font("Arial", Font.BOLD, 14));
-        addButton.setBackground(new Color(76, 175, 80));
+        addButton.setBackground(new Color(0, 0, 0));
         addButton.setForeground(Color.WHITE);
         addButton.addActionListener(e -> {
             String name = nameField.getText();
@@ -135,7 +135,7 @@ public class AdBookingMenu {
                     duration,
                     String.valueOf(Rooms.getRoomId(roomName)),
                     "0",
-                    "0"
+                    "0",
             };
 
             if (!Bookings.addBooking(booking)) {
@@ -146,6 +146,19 @@ public class AdBookingMenu {
 
             JOptionPane.showMessageDialog(addBookingFrame,
                     "Бронь добавлена успешно!", "Успех", JOptionPane.INFORMATION_MESSAGE);
+
+            String[] bookingDates = getBookingDates(date, Integer.parseInt(duration));
+            for (String bookingDate : bookingDates) {
+                int bookid = Integer.parseInt(Bookings.getBookingByDayAndRoom(date, Rooms.getRoomId(roomName))[7]);
+                String[] bookingData = {bookingDate, String.valueOf(Rooms.getRoomId(roomName)), String.valueOf(bookid)};
+                if (!Days.addDates(bookingData)) {
+                    JOptionPane.showMessageDialog(addBookingFrame,
+                            "Ошибка при добавлении даты брони.", "Ошибка", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            }
+
+
             addBookingFrame.dispose();
         });
         buttonPanel.add(addButton);
@@ -162,5 +175,19 @@ public class AdBookingMenu {
         addBookingFrame.setLocationRelativeTo(null);
         addBookingFrame.setResizable(false);
         addBookingFrame.setVisible(true);
+    }
+    private static String[] getBookingDates(String date, int duration){
+        String[] bookingDates = new String[duration];
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        try {
+            Date startDate = dateFormat.parse(date);
+            for (int i = 0; i < duration; i++) {
+                bookingDates[i] = dateFormat.format(startDate);
+                startDate.setTime(startDate.getTime() + (1000 * 60 * 60 * 24));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return bookingDates;
     }
 }

@@ -1,5 +1,10 @@
 package Week;
 
+import DataBase.SQLConnect;
+
+import java.sql.*;
+
+
 public enum Days {
     MONDAY(0),
     TUESDAY(1),
@@ -103,5 +108,65 @@ public enum Days {
         month = calendar.get(java.util.Calendar.MONTH) + 1;
         day = calendar.get(java.util.Calendar.DAY_OF_MONTH);
         return String.format("%04d-%02d-%02d", year, month, day);
+    }
+    public static boolean addDates(String[] date){
+        Connection connection = null;
+        PreparedStatement statement = null;
+
+        try {
+            connection = SQLConnect.getConnection();
+            String sql = "INSERT INTO booking_dates (date, roomid, bookid) " +
+                    "VALUES (?, ?, ?)";
+            statement = connection.prepareStatement(sql);
+
+            statement.setString(1, date[0]);
+            statement.setInt(2, Integer.parseInt(date[1]));
+            statement.setInt(3, Integer.parseInt(date[2]));
+
+            int affectedRows = statement.executeUpdate();
+            return affectedRows > 0;
+        } catch (SQLException e) {
+            System.err.println("Ошибка при добавлении дней: " + e.getMessage());
+            return false;
+        } finally {
+            closeResources(null, statement);
+            SQLConnect.releaseConnection(connection);
+        }
+    }
+    private static void closeResources(ResultSet resultSet, Statement statement) {
+        try {
+            if (resultSet != null) {
+                resultSet.close();
+            }
+            if (statement != null) {
+                statement.close();
+            }
+        } catch (SQLException e) {
+            System.err.println("Ошибка при закрытии ресурсов: " + e.getMessage());
+        }
+    }
+    public static int getBookingIdByDayAndRoom(String date, int room) {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+
+        try {
+            connection = SQLConnect.getConnection();
+            String sql = "SELECT bookid FROM booking_dates WHERE date = ? AND roomid = ?";
+            statement = connection.prepareStatement(sql);
+            statement.setString(1, date);
+            statement.setInt(2, room);
+            resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getInt("bookid");
+            }
+            return -1; // Если не найдено
+        } catch (SQLException e) {
+            System.err.println("Ошибка при получении ID бронирования: " + e.getMessage());
+            return -1;
+        } finally {
+            closeResources(resultSet, statement);
+            SQLConnect.releaseConnection(connection);
+        }
     }
 }

@@ -59,14 +59,17 @@ public class Rooms {
 
         try {
             connection = SQLConnect.getConnection();
-            String sql = "SELECT 1 FROM bookings WHERE date = ? AND roomid = ? LIMIT 1";
+            String sql = "SELECT COUNT(*) FROM booking_dates WHERE date = ? AND roomid = ?";
             statement = connection.prepareStatement(sql);
             statement.setString(1, date);
             statement.setInt(2, room);
             resultSet = statement.executeQuery();
-            return resultSet.next();
+            if (resultSet.next()) {
+                return resultSet.getInt(1) > 0;
+            }
+            return false;
         } catch (SQLException e) {
-            System.err.println("Ошибка при проверке бронирования: " + e.getMessage());
+            System.err.println("Ошибка при проверке бронирования комнаты: " + e.getMessage());
             return false;
         } finally {
             closeResources(resultSet, statement);

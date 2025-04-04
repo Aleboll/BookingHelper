@@ -89,8 +89,15 @@ public class SQLConnect {
                     "duration INT, " +
                     "roomid INT, " +
                     "type INT, " +
-                    "status INT)";
+                    "status INT )" ;
             statement.executeUpdate(bookingsTableSQL);
+
+            String bookingDatesTableSQL = "CREATE TABLE IF NOT EXISTS booking_dates (" +
+                    "id SERIAL PRIMARY KEY, " +
+                    "date VARCHAR(10), " +
+                    "roomid INT, " +
+                    "bookid INT)";
+            statement.executeUpdate(bookingDatesTableSQL);
 
             return true;
         } catch (SQLException e) {

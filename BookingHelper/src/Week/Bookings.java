@@ -56,7 +56,7 @@ public class Bookings {
     }
 
     public static String[] getBookingByDayAndRoom(String date, int room) {
-        String[] booking = new String[7];
+        String[] booking = new String[8];
         Connection connection = null;
         PreparedStatement statement = null;
         ResultSet resultSet = null;
@@ -77,6 +77,7 @@ public class Bookings {
                 booking[4] = String.valueOf(resultSet.getInt("roomid"));
                 booking[5] = String.valueOf(resultSet.getInt("type"));
                 booking[6] = String.valueOf(resultSet.getInt("status"));
+                booking[7] = String.valueOf(resultSet.getInt("id"));
             }
         } catch (SQLException e) {
             System.err.println("Ошибка при получении бронирования: " + e.getMessage());
@@ -141,7 +142,37 @@ public class Bookings {
                 String.valueOf(status)
         };
     }
+    public static String[] getBookingById(int id){
+        String[] booking = new String[8];
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
 
+        try {
+            connection = SQLConnect.getConnection();
+            String sql = "SELECT * FROM bookings WHERE id = ?";
+            statement = connection.prepareStatement(sql);
+            statement.setInt(1, id);
+            resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                booking[0] = resultSet.getString("name");
+                booking[1] = resultSet.getString("date");
+                booking[2] = resultSet.getString("time");
+                booking[3] = String.valueOf(resultSet.getInt("duration"));
+                booking[4] = String.valueOf(resultSet.getInt("roomid"));
+                booking[5] = String.valueOf(resultSet.getInt("type"));
+                booking[6] = String.valueOf(resultSet.getInt("status"));
+                booking[7] = String.valueOf(resultSet.getInt("id"));
+            }
+        } catch (SQLException e) {
+            System.err.println("Ошибка при получении бронирования: " + e.getMessage());
+        } finally {
+            closeResources(resultSet, statement);
+            SQLConnect.releaseConnection(connection);
+        }
+        return booking;
+    }
     // Геттеры
     public String getName() { return name; }
     public String getDate() { return date; }

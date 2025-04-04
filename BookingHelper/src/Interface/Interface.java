@@ -56,6 +56,7 @@ public class Interface {
         JPanel bookingPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, BUTTON_SPACING, BUTTON_SPACING));
         JButton addBookingButton = new JButton("Добавить бронь");
         JButton deleteBookingButton = new JButton("Удалить бронь");
+        JButton addRoomButton = new JButton("Добавить номер");
 
         addBookingButton.addActionListener(e -> {
             // Логика добавления бронирования
@@ -66,9 +67,14 @@ public class Interface {
             // Логика удаления бронирования
             System.out.println("Удаление бронирования...");
         });
+        addRoomButton.addActionListener(e -> {
+            AddRoomMenu.showAddRoomMenu();
+
+        });
 
         bookingPanel.add(addBookingButton);
         bookingPanel.add(deleteBookingButton);
+        bookingPanel.add(addRoomButton);
         return bookingPanel;
     }
 
@@ -112,7 +118,7 @@ public class Interface {
             for (int dayIndex = 1; dayIndex < WEEK_DAYS.length; dayIndex++) {
                 gbc.gridx = dayIndex;
                 if (dayIndex-1 < weekDates.length && Rooms.isRoomBooked(weekDates[dayIndex-1], roomId)) {
-                    String bookingInfo = Bookings.getBookingByDayAndRoom(weekDates[dayIndex-1], roomId)[0];
+                    String bookingInfo = Bookings.getBookingById(Days.getBookingIdByDayAndRoom(weekDates[dayIndex-1], roomId))[0];
                     panel.add(createCalendarCell(bookingInfo, false), gbc);
                 } else {
                     panel.add(createCalendarCell("", false), gbc);
@@ -213,5 +219,8 @@ public class Interface {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(Interface::initiateInterface);
+    }
+    public static void updateInterface() {
+        SwingUtilities.invokeLater(Interface::initiateInterface);;
     }
 }
