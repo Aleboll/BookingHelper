@@ -6,6 +6,7 @@ import Week.Days;
 import Week.Rooms;
 import javax.swing.*;
 import java.awt.*;
+import java.text.ParseException;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Interface {
@@ -16,26 +17,21 @@ public class Interface {
     private static volatile boolean isUpdating = false;
 
     public static void initiateInterface() {
-        // Инициализация базы данных
         if (!SQLConnect.InitiateTables()) {
             showErrorDialog("Ошибка при инициализации базы данных");
             return;
         }
 
         try {
-            // Создание главного окна
             JFrame mainFrame = createMainFrame();
             AtomicReference<String> selectedDate = new AtomicReference<>(Days.GetTodaysWeekBeginingDate());
 
-            // Создание компонентов интерфейса
             JScrollPane calendarScrollPane = createCalendarScrollPane(selectedDate.get());
             JPanel weekNavigationPanel = createWeekNavigationPanel(selectedDate, calendarScrollPane, mainFrame);
             JPanel bookingManagementPanel = createBookingManagementPanel();
 
-            // Компоновка интерфейса
             assembleInterface(mainFrame, weekNavigationPanel, calendarScrollPane, bookingManagementPanel);
 
-            // Обработка закрытия окна
             mainFrame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
             mainFrame.addWindowListener(new java.awt.event.WindowAdapter() {
                 @Override
@@ -58,19 +54,9 @@ public class Interface {
         JButton deleteBookingButton = new JButton("Удалить бронь");
         JButton addRoomButton = new JButton("Добавить номер");
 
-        addBookingButton.addActionListener(e -> {
-            // Логика добавления бронирования
-            AdBookingMenu.showAdBookingMenu();
-        });
-
-        deleteBookingButton.addActionListener(e -> {
-            // Логика удаления бронирования
-            System.out.println("Удаление бронирования...");
-        });
-        addRoomButton.addActionListener(e -> {
-            AddRoomMenu.showAddRoomMenu();
-
-        });
+        addBookingButton.addActionListener(e -> AdBookingMenu.showAdBookingMenu());
+        deleteBookingButton.addActionListener(e -> System.out.println("Удаление бронирования..."));
+        addRoomButton.addActionListener(e -> AddRoomMenu.showAddRoomMenu());
 
         bookingPanel.add(addBookingButton);
         bookingPanel.add(deleteBookingButton);
@@ -107,21 +93,21 @@ public class Interface {
             gbc.gridx = i;
             gbc.gridy = 0;
             String date = (i > 0 && i-1 < weekDates.length) ? formatDate(weekDates[i-1]) : null;
-            panel.add(createCalendarCell(WEEK_DAYS[i], true, date, false), gbc);
+            panel.add(createCalendarCell(WEEK_DAYS[i], true, date, false, 0, null), gbc);
         }
 
         for (int roomId = 1; roomId <= roomCount; roomId++) {
             gbc.gridx = 0;
             gbc.gridy = roomId;
-            panel.add(createCalendarCell(Rooms.getRoomById(roomId)[0], true, null, false), gbc);
+            panel.add(createCalendarCell(Rooms.getRoomById(roomId)[0], true, null, false, 0, null), gbc);
 
             for (int dayIndex = 1; dayIndex < WEEK_DAYS.length; dayIndex++) {
                 gbc.gridx = dayIndex;
                 if (dayIndex-1 < weekDates.length && Rooms.isRoomBooked(weekDates[dayIndex-1], roomId)) {
                     String bookingInfo = Bookings.getBookingById(Days.getBookingIdByDayAndRoom(weekDates[dayIndex-1], roomId))[0];
-                    panel.add(createCalendarCell(bookingInfo, false, null, true), gbc);
+                    panel.add(createCalendarCell(bookingInfo, false, null, true, roomId, weekDates[dayIndex-1]), gbc);
                 } else {
-                    panel.add(createCalendarCell("", false, null, false), gbc);
+                    panel.add(createCalendarCell("", false, null, false, roomId, weekDates[dayIndex-1]), gbc);
                 }
             }
         }
@@ -129,24 +115,10 @@ public class Interface {
         return panel;
     }
 
-    // Вспомогательный метод для форматирования даты
-    private static String formatDate(String date) {
-        try {
-            // Предполагаем, что date в формате yyyy-MM-dd
-            String[] parts = date.split("-");
-            if (parts.length == 3) {
-                return String.format("%s.%s.%s", parts[2], parts[1], parts[0]);
-            }
-        } catch (Exception e) {
-            // В случае ошибки просто вернем исходную дату
-        }
-        return date;
-    }
-
-    private static JLabel createCalendarCell(String text, boolean isHeader, String date, boolean isBooked) {
+    private static JLabel createCalendarCell(String text, boolean isHeader, String date, boolean isBooked,
+                                             int roomId, String dayDate) {
         String cellContent;
         if (isHeader && date != null) {
-            // Для заголовка добавляем дату мелким шрифтом сверху
             cellContent = String.format("<html><div style='text-align: center;'><small>%s</small><br/>%s</div></html>",
                     date, text.replace("\n", "<br/>"));
         } else {
@@ -159,22 +131,79 @@ public class Interface {
         cell.setPreferredSize(new Dimension(100, 80));
         cell.setHorizontalAlignment(SwingConstants.CENTER);
         cell.setVerticalAlignment(SwingConstants.CENTER);
-
+        cell.setOpaque(true);
 
         if (isBooked) {
             cell.setBackground(new Color(108, 151, 207));
-            cell.setOpaque(true);
         } else {
             cell.setBackground(Color.WHITE);
-            cell.setOpaque(true);
         }
+
         if (isHeader) {
             cell.setBackground(new Color(19, 95, 193));
-            cell.setOpaque(true);
             cell.setFont(cell.getFont().deriveFont(Font.BOLD));
             cell.setForeground(Color.WHITE);
+        } else {
+            cell.addMouseListener(new java.awt.event.MouseAdapter() {
+                public void mouseClicked(java.awt.event.MouseEvent evt) {
+                    try {
+                        handleCellClick(roomId, dayDate, isBooked, text);
+                    } catch (ParseException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+
+                public void mouseEntered(java.awt.event.MouseEvent evt) {
+                    cell.setBorder(BorderFactory.createLineBorder(Color.BLUE, 2));
+                }
+
+                public void mouseExited(java.awt.event.MouseEvent evt) {
+                    cell.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+                }
+            });
+            cell.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         }
+
         return cell;
+    }
+
+    private static void handleCellClick(int roomId, String date, boolean isBooked, String bookingInfo) throws ParseException {
+        if (isBooked) {
+            String roomName = Rooms.getRoomById(roomId)[0];
+            String formattedDate = formatDate(date);
+
+            JOptionPane.showMessageDialog(null,
+                    "<html><b>Информация о бронировании:</b><br>" +
+                            "Номер: " + roomName + "<br>" +
+                            "Дата: " + formattedDate + "<br>" +
+                            "Детали: " + bookingInfo + "</html>",
+                    "Бронирование",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            String roomName = Rooms.getRoomById(roomId)[0];
+            String formattedDate = formatDate(date);
+
+            int option = JOptionPane.showConfirmDialog(null,
+                    "<html>Создать новое бронирование?<br>" +
+                            "Номер: " + roomName + "<br>" +
+                            "Дата: " + formattedDate + "</html>",
+                    "Новое бронирование",
+                    JOptionPane.YES_NO_OPTION);
+
+            if (option == JOptionPane.YES_OPTION) {
+                AdBookingMenu.showAdBookingMenu(roomId, date);
+            }
+        }
+    }
+
+    private static String formatDate(String date) {
+        try {
+            String[] parts = date.split("-");
+            if (parts.length == 3) {
+                return String.format("%s.%s.%s", parts[2], parts[1], parts[0]);
+            }
+        } catch (Exception e) {}
+        return date;
     }
 
     private static JPanel createWeekNavigationPanel(AtomicReference<String> selectedDate,
@@ -250,7 +279,8 @@ public class Interface {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(Interface::initiateInterface);
     }
+
     public static void updateInterface() {
-        SwingUtilities.invokeLater(Interface::initiateInterface);;
+        SwingUtilities.invokeLater(Interface::initiateInterface);
     }
 }
