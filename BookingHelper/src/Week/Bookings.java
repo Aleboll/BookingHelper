@@ -1,11 +1,8 @@
 package Week;
 
 import DataBase.SQLConnect;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+
+import java.sql.*;
 
 public class Bookings {
     private String name;
@@ -175,6 +172,43 @@ public class Bookings {
             SQLConnect.releaseConnection(connection);
         }
         return booking;
+    }
+    public static boolean deleteBooking(int bookingId) throws SQLException {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        try {
+            String[] booking = getBookingById(bookingId);
+            Date date = Date.valueOf(booking[1]);
+            int room = Integer.parseInt(booking[4]);
+
+            connection = SQLConnect.getConnection();
+            String sql = "DELETE FROM booking_dates WHERE bookid = ?";
+            statement = connection.prepareStatement(sql);
+
+            // Устанавливаем параметры (индексы 1 и 2)
+            statement.setInt(1, bookingId);
+            int affectedRows = 0;
+            if (statement.executeUpdate() > 0) {
+                sql = "DELETE FROM bookings WHERE id = ?";
+                statement = connection.prepareStatement(sql);
+                statement.setInt(1, bookingId);
+                affectedRows = statement.executeUpdate();
+            }
+
+            return affectedRows > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            // Закрываем ресурсы в обратном порядке
+            if (statement != null) {
+                try { statement.close(); } catch (SQLException e) { e.printStackTrace(); }
+            }
+            if (connection != null) {
+                try { connection.close(); } catch (SQLException e) { e.printStackTrace(); }
+            }
+        }
+
     }
     // Геттеры
     public String getName() { return name; }

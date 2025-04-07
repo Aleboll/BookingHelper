@@ -6,6 +6,7 @@ import Week.Days;
 import Week.Rooms;
 import javax.swing.*;
 import java.awt.*;
+import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -51,15 +52,12 @@ public class Interface {
     private static JPanel createBookingManagementPanel() {
         JPanel bookingPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, BUTTON_SPACING, BUTTON_SPACING));
         JButton addBookingButton = new JButton("Добавить бронь");
-        JButton deleteBookingButton = new JButton("Удалить бронь");
         JButton addRoomButton = new JButton("Добавить номер");
 
         addBookingButton.addActionListener(e -> AdBookingMenu.showAdBookingMenu());
-        deleteBookingButton.addActionListener(e -> System.out.println("Удаление бронирования..."));
         addRoomButton.addActionListener(e -> AddRoomMenu.showAddRoomMenu());
 
         bookingPanel.add(addBookingButton);
-        bookingPanel.add(deleteBookingButton);
         bookingPanel.add(addRoomButton);
         return bookingPanel;
     }
@@ -148,7 +146,7 @@ public class Interface {
                 public void mouseClicked(java.awt.event.MouseEvent evt) {
                     try {
                         handleCellClick(roomId, dayDate, isBooked, text);
-                    } catch (ParseException e) {
+                    } catch (ParseException | SQLException e) {
                         throw new RuntimeException(e);
                     }
                 }
@@ -167,18 +165,27 @@ public class Interface {
         return cell;
     }
 
-    private static void handleCellClick(int roomId, String date, boolean isBooked, String bookingInfo) throws ParseException {
+    private static void handleCellClick(int roomId, String date, boolean isBooked, String bookingInfo) throws ParseException, SQLException {
         if (isBooked) {
             String roomName = Rooms.getRoomById(roomId)[0];
             String formattedDate = formatDate(date);
+            String[] options = {"Edit", "Delete", "Ok"};
 
-            JOptionPane.showMessageDialog(null,
+            int choise = JOptionPane.showOptionDialog(null,
                     "<html><b>Информация о бронировании:</b><br>" +
                             "Номер: " + roomName + "<br>" +
                             "Дата: " + formattedDate + "<br>" +
                             "Детали: " + bookingInfo + "</html>",
                     "Бронирование",
-                    JOptionPane.INFORMATION_MESSAGE);
+                        JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        options,
+                        options[2]);
+            if (choise == 1){
+                System.out.println(Bookings.deleteBooking(roomId));
+            }
+
         } else {
             String roomName = Rooms.getRoomById(roomId)[0];
             String formattedDate = formatDate(date);
