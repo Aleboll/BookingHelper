@@ -175,7 +175,7 @@ public class Interface {
                     "<html><b>Информация о бронировании:</b><br>" +
                             "Номер: " + roomName + "<br>" +
                             "Дата: " + formattedDate + "<br>" +
-                            "Детали: " + bookingInfo + "</html>",
+                            "Детали: " + bookingInfo + " "+ roomId +"</html>",
                     "Бронирование",
                         JOptionPane.DEFAULT_OPTION,
                         JOptionPane.QUESTION_MESSAGE,
@@ -183,7 +183,7 @@ public class Interface {
                         options,
                         options[2]);
             if (choise == 1){
-                System.out.println(Bookings.deleteBooking(roomId));
+                System.out.println(Bookings.deleteBooking(Bookings.getBookingIdByDateAndRoom(date, roomId)));
             }
 
         } else {

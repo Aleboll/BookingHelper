@@ -52,6 +52,7 @@ public class Rooms {
         }
     }
 
+
     public static boolean isRoomBooked(String date, int room) {
         Connection connection = null;
         PreparedStatement statement = null;

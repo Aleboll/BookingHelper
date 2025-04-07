@@ -122,6 +122,32 @@ public class Bookings {
         }
     }
 
+    public static int getBookingIdByDateAndRoom(String date, int roomId){
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+
+        try {
+            connection = SQLConnect.getConnection();
+            String sql = "SELECT bookid FROM booking_dates WHERE date = ? AND roomid = ?";
+            statement = connection.prepareStatement(sql);
+            java.sql.Date sqlDate = java.sql.Date.valueOf(date);
+            statement.setDate(1, sqlDate);
+            statement.setInt(2, roomId);
+            resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                return resultSet.getInt("bookid");
+            }
+            return -1; // Если не найдено
+        } catch (SQLException e) {
+            System.err.println("Ошибка при получении ID бронирования: " + e.getMessage());
+            return -1;
+        } finally {
+            closeResources(resultSet, statement);
+            SQLConnect.releaseConnection(connection);
+        }
+    }
     private static void closeResources(ResultSet resultSet, Statement statement) {
         try {
             if (resultSet != null) resultSet.close();
@@ -177,9 +203,6 @@ public class Bookings {
         Connection connection = null;
         PreparedStatement statement = null;
         try {
-            String[] booking = getBookingById(bookingId);
-            Date date = Date.valueOf(booking[1]);
-            int room = Integer.parseInt(booking[4]);
 
             connection = SQLConnect.getConnection();
             String sql = "DELETE FROM booking_dates WHERE bookid = ?";
@@ -187,11 +210,14 @@ public class Bookings {
 
             // Устанавливаем параметры (индексы 1 и 2)
             statement.setInt(1, bookingId);
-            int affectedRows = 0;
-            if (statement.executeUpdate() > 0) {
+            System.out.println(sql);
+
+            int affectedRows = statement.executeUpdate();
+            if (affectedRows > 0) {
                 sql = "DELETE FROM bookings WHERE id = ?";
                 statement = connection.prepareStatement(sql);
                 statement.setInt(1, bookingId);
+                System.out.println(sql);
                 affectedRows = statement.executeUpdate();
             }
 
