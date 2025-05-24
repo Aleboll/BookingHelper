@@ -20,6 +20,24 @@ public enum Days {
         this.value = value;
     }
 
+    public static boolean deleteDatesByBookingId(int bookingId) {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+
+        try {
+            conn = SQLConnect.getConnection();
+            stmt = conn.prepareStatement("DELETE FROM booking_dates WHERE bookid = ?");
+            stmt.setInt(1, bookingId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Ошибка при удалении дат брони: " + e.getMessage());
+            return false;
+        } finally {
+            SQLConnect.closeResources(null, stmt);
+            SQLConnect.releaseConnection(conn);
+        }
+    }
+
     public int getValue() {
         return value;
     }
@@ -135,7 +153,7 @@ public enum Days {
             SQLConnect.releaseConnection(connection);
         }
     }
-    private static void closeResources(ResultSet resultSet, Statement statement) {
+    public static void closeResources(ResultSet resultSet, Statement statement) {
         try {
             if (resultSet != null) {
                 resultSet.close();

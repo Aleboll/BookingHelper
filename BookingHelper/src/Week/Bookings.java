@@ -86,6 +86,7 @@ public class Bookings {
         return booking;
     }
 
+
     public static boolean addBooking(String[] booking) {
         if (Rooms.isRoomBooked(booking[1], Integer.parseInt(booking[4]))) {
             System.out.println("Комната уже забронирована");
@@ -154,6 +155,35 @@ public class Bookings {
             if (statement != null) statement.close();
         } catch (SQLException e) {
             System.err.println("Ошибка при закрытии ресурсов: " + e.getMessage());
+        }
+    }
+
+    public static boolean updateBooking(String[] updatedData) {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+
+        try {
+            conn = SQLConnect.getConnection();
+            String sql = "UPDATE bookings SET name=?, date=?, time=?, duration=?, " +
+                    "roomid=?, type=?, status=? WHERE id=?";
+            stmt = conn.prepareStatement(sql);
+
+            stmt.setString(1, updatedData[0]);
+            stmt.setDate(2, Date.valueOf(updatedData[1]));
+            stmt.setTime(3, Time.valueOf(updatedData[2] + ":00"));
+            stmt.setInt(4, Integer.parseInt(updatedData[3]));
+            stmt.setInt(5, Integer.parseInt(updatedData[4]));
+            stmt.setInt(6, Integer.parseInt(updatedData[5]));
+            stmt.setInt(7, Integer.parseInt(updatedData[6]));
+            stmt.setInt(8, Integer.parseInt(updatedData[7]));
+
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Ошибка при обновлении брони: " + e.getMessage());
+            return false;
+        } finally {
+            SQLConnect.closeResources(null, stmt);
+            SQLConnect.releaseConnection(conn);
         }
     }
 

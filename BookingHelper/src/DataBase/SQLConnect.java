@@ -1,9 +1,6 @@
 package DataBase;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -120,5 +117,8 @@ public class SQLConnect {
             }
         }
         connectionPool.clear();
+    }
+
+    public static void closeResources(Object o, PreparedStatement stmt) {
     }
 }

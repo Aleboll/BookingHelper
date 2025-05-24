@@ -1,6 +1,7 @@
 package Interface;
 
 import DataBase.SQLConnect;
+import Interface.Client.ClientLibraryWindow;
 import Week.Bookings;
 import Week.Days;
 import Week.Rooms;
@@ -53,6 +54,12 @@ public class Interface {
         JPanel bookingPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, BUTTON_SPACING, BUTTON_SPACING));
         JButton addBookingButton = new JButton("Добавить бронь");
         JButton addRoomButton = new JButton("Добавить номер");
+        JButton clientsButton = new JButton("Клиенты");
+        clientsButton.setFont(new Font("Arial", Font.PLAIN, 14));
+        clientsButton.addActionListener(e -> {
+            new ClientLibraryWindow(); // открытие окна клиентов
+        });
+        bookingPanel.add(clientsButton); // или куда ты размещаешь кнопки
 
         addBookingButton.addActionListener(e -> AdBookingMenu.showAdBookingMenu());
         addRoomButton.addActionListener(e -> AddRoomMenu.showAddRoomMenu());
@@ -76,42 +83,6 @@ public class Interface {
         return scrollPane;
     }
 
-    private static JPanel createCalendarPanel(String startDate) {
-        String[] weekDates = Days.GetWeekDates(startDate);
-        int roomCount = Rooms.getCountOfRooms();
-        JPanel panel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.anchor = GridBagConstraints.NORTHWEST;
-        gbc.insets = new Insets(2, 2, 2, 2);
-
-        // Добавление заголовков
-        for (int i = 0; i < WEEK_DAYS.length; i++) {
-            gbc.gridx = i;
-            gbc.gridy = 0;
-            String date = (i > 0 && i-1 < weekDates.length) ? formatDate(weekDates[i-1]) : null;
-            panel.add(createCalendarCell(WEEK_DAYS[i], true, date, false, 0, null), gbc);
-        }
-
-        for (int roomId = 1; roomId <= roomCount; roomId++) {
-            gbc.gridx = 0;
-            gbc.gridy = roomId;
-            panel.add(createCalendarCell(Rooms.getRoomById(roomId)[0], true, null, false, 0, null), gbc);
-
-            for (int dayIndex = 1; dayIndex < WEEK_DAYS.length; dayIndex++) {
-                gbc.gridx = dayIndex;
-                if (dayIndex-1 < weekDates.length && Rooms.isRoomBooked(weekDates[dayIndex-1], roomId)) {
-                    String bookingInfo = Bookings.getBookingById(Days.getBookingIdByDayAndRoom(weekDates[dayIndex-1], roomId))[0];
-                    panel.add(createCalendarCell(bookingInfo, false, null, true, roomId, weekDates[dayIndex-1]), gbc);
-                } else {
-                    panel.add(createCalendarCell("", false, null, false, roomId, weekDates[dayIndex-1]), gbc);
-                }
-            }
-        }
-
-        return panel;
-    }
 
     private static JLabel createCalendarCell(String text, boolean isHeader, String date, boolean isBooked,
                                              int roomId, String dayDate) {
@@ -146,7 +117,7 @@ public class Interface {
                 public void mouseClicked(java.awt.event.MouseEvent evt) {
                     try {
                         handleCellClick(roomId, dayDate, isBooked, text);
-                    } catch (ParseException | SQLException e) {
+                    } catch (SQLException | ParseException e) {
                         throw new RuntimeException(e);
                     }
                 }
@@ -165,27 +136,51 @@ public class Interface {
         return cell;
     }
 
-    private static void handleCellClick(int roomId, String date, boolean isBooked, String bookingInfo) throws ParseException, SQLException {
+    private static void handleCellClick(int roomId, String date, boolean isBooked, String bookingInfo) throws SQLException, ParseException {
         if (isBooked) {
             String roomName = Rooms.getRoomById(roomId)[0];
             String formattedDate = formatDate(date);
-            String[] options = {"Edit", "Delete", "Ok"};
+            String[] options = {"Edit", "Delete", "Cancel"};
 
-            int choise = JOptionPane.showOptionDialog(null,
-                    "<html><b>Информация о бронировании:</b><br>" +
-                            "Номер: " + roomName + "<br>" +
-                            "Дата: " + formattedDate + "<br>" +
-                            "Детали: " + bookingInfo + " "+ roomId +"</html>",
-                    "Бронирование",
-                        JOptionPane.DEFAULT_OPTION,
-                        JOptionPane.QUESTION_MESSAGE,
-                        null,
-                        options,
-                        options[2]);
-            if (choise == 1){
-                System.out.println(Bookings.deleteBooking(Bookings.getBookingIdByDateAndRoom(date, roomId)));
+            int choice = JOptionPane.showOptionDialog(null,
+                    "<html><b>Booking Info:</b><br>" +
+                            "Room: " + roomName + "<br>" +
+                            "Date: " + formattedDate + "<br>" +
+                            "Details: " + bookingInfo + "</html>",
+                    "Booking Management",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    options,
+                    options[2]);
+
+            if (choice == 0) { // Edit выбрана
+                String[] bookingData = Bookings.getBookingById(
+                        Bookings.getBookingIdByDateAndRoom(date, roomId)
+                );
+                EditBookingMenu.showEditBookingMenu(bookingData);
             }
+            else if (choice == 1) { // Delete выбрана
+                int confirm = JOptionPane.showConfirmDialog(
+                        null,
+                        "Are you sure you want to delete this booking?",
+                        "Confirm Deletion",
+                        JOptionPane.YES_NO_OPTION);
 
+                if (confirm == JOptionPane.YES_OPTION) {
+                    boolean deleted = Bookings.deleteBooking(
+                            Bookings.getBookingIdByDateAndRoom(date, roomId)
+                    );
+                    if (deleted) {
+                        JOptionPane.showMessageDialog(null,
+                                "Booking deleted successfully!",
+                                "Success",
+                                JOptionPane.INFORMATION_MESSAGE);
+                        Interface.updateCalendar();
+                        // Обновляем интерфейс
+                    }
+                }
+            }
         } else {
             String roomName = Rooms.getRoomById(roomId)[0];
             String formattedDate = formatDate(date);
@@ -209,10 +204,15 @@ public class Interface {
             if (parts.length == 3) {
                 return String.format("%s.%s.%s", parts[2], parts[1], parts[0]);
             }
-        } catch (Exception e) {}
+        } catch (Exception _) {}
         return date;
     }
 
+    private static void updateCalendar(String date, JScrollPane scrollPane) {
+        SwingUtilities.invokeLater(() -> {
+            scrollPane.setViewportView(createCalendarPanel(date));
+        });
+    }
     private static JPanel createWeekNavigationPanel(AtomicReference<String> selectedDate,
                                                     JScrollPane scrollPane,
                                                     JFrame frame) {
@@ -258,11 +258,64 @@ public class Interface {
         return button;
     }
 
-    private static void updateCalendar(String date, JScrollPane scrollPane) {
+    public static void updateCalendar() {
         SwingUtilities.invokeLater(() -> {
-            scrollPane.setViewportView(createCalendarPanel(date));
+            // 1. Получаем ссылку на главное окно
+            JFrame mainFrame = null;
+            for (Window window : Window.getWindows()) {
+                if (window instanceof JFrame && "BookMe - Система бронирования".equals(((JFrame) window).getTitle())) {
+                    mainFrame = (JFrame) window;
+                    break;
+                }
+            }
+
+            if (mainFrame != null) {
+                // 2. Закрываем текущее окно
+                mainFrame.dispose();
+
+                // 3. Создаем и показываем новое окно (как при запуске)
+                initiateInterface();
+            }
         });
     }
+
+    private static JPanel createCalendarPanel(String startDate) {
+        String[] weekDates = Days.GetWeekDates(startDate);
+        int roomCount = Rooms.getCountOfRooms();
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.NORTHWEST;
+        gbc.insets = new Insets(2, 2, 2, 2);
+
+        // Добавление заголовков
+        for (int i = 0; i < WEEK_DAYS.length; i++) {
+            gbc.gridx = i;
+            gbc.gridy = 0;
+            String date = (i > 0 && i-1 < weekDates.length) ? formatDate(weekDates[i-1]) : null;
+            panel.add(createCalendarCell(WEEK_DAYS[i], true, date, false, 0, null), gbc);
+        }
+
+        for (int roomId = 1; roomId <= roomCount; roomId++) {
+            gbc.gridx = 0;
+            gbc.gridy = roomId;
+            panel.add(createCalendarCell(Rooms.getRoomById(roomId)[0], true, null, false, 0, null), gbc);
+
+            for (int dayIndex = 1; dayIndex < WEEK_DAYS.length; dayIndex++) {
+                gbc.gridx = dayIndex;
+                if (dayIndex-1 < weekDates.length && Rooms.isRoomBooked(weekDates[dayIndex-1], roomId)) {
+                    String bookingInfo = Bookings.getBookingById(Days.getBookingIdByDayAndRoom(weekDates[dayIndex-1], roomId))[0];
+                    panel.add(createCalendarCell(bookingInfo, false, null, true, roomId, weekDates[dayIndex-1]), gbc);
+                } else {
+                    panel.add(createCalendarCell("", false, null, false, roomId, weekDates[dayIndex-1]), gbc);
+                }
+            }
+        }
+
+        return panel;
+    }
+
 
     private static void assembleInterface(JFrame frame, JPanel weekPanel,
                                           JScrollPane calendarPane, JPanel bookingPanel) {

@@ -1,5 +1,6 @@
 package Interface;
 
+import Week.Days;
 import Week.Rooms;
 
 import javax.swing.*;
@@ -99,6 +100,10 @@ public class AddRoomMenu {
 
 
             System.out.println("Комната добавлена: " + name + ", Цена: " + price + ", Мест: " + space + ", Доп. место: " + extraSpace + ", Тип: " + type);
+            String currentDate = Days.GetTodaysWeekBeginingDate();
+
+
+            Interface.updateCalendar();
             addRoomFrame.dispose();
 
         });

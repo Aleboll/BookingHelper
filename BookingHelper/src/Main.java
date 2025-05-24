@@ -12,12 +12,12 @@ import java.awt.*;
 import java.util.Arrays;
 
 public class Main {
-        public static void main(String[] args) {
-            SQLConnect.InitiateTables();
-            Interface.initiateInterface();
+    public static void main(String[] args) {
+        SQLConnect.InitiateTables();
+        Interface.initiateInterface();
 
-            Bookings booking1 = new Bookings(1);
-            System.out.println(Arrays.toString(booking1.toStringArray()));
-            System.out.println(Days.GetTodaysWeekBeginingDate());
-        }
+        Bookings booking1 = new Bookings(1);
+        System.out.println(Arrays.toString(booking1.toStringArray()));
+        System.out.println(Days.GetTodaysWeekBeginingDate());
     }
+}

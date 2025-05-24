@@ -14,6 +14,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class AdBookingMenu {
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
+    private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm");
     public static void showAdBookingMenu() {
         JFrame addBookingFrame = new JFrame("Добавить бронь");
         addBookingFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -150,7 +152,9 @@ public class AdBookingMenu {
 
             String[] bookingDates = getBookingDates(date, Integer.parseInt(duration));
             for (String bookingDate : bookingDates) {
-                int bookid = Integer.parseInt(Bookings.getBookingByDayAndRoom(date, Rooms.getRoomId(roomName))[7]);
+                String x = Bookings.getBookingByDayAndRoom(date, Rooms.getRoomId(roomName))[7];
+                int bookid = Integer.parseInt(x);
+                //int bookid = Integer.parseInt(Bookings.getBookingByDayAndRoom(date, Rooms.getRoomId(roomName))[7]);
                 String[] bookingData = {bookingDate, String.valueOf(Rooms.getRoomId(roomName)), String.valueOf(bookid)};
                 if (!Days.addDates(bookingData)) {
                     JOptionPane.showMessageDialog(addBookingFrame,
@@ -159,7 +163,7 @@ public class AdBookingMenu {
                 }
             }
 
-
+            Interface.updateCalendar();
             addBookingFrame.dispose();
         });
         buttonPanel.add(addButton);
@@ -242,9 +246,12 @@ public class AdBookingMenu {
 
         gbc.gridx = 1;
         JXDatePicker datePicker = new JXDatePicker();
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-        datePicker.setFormats("yyyy-MM-dd");
-        datePicker.setDate(formatter.parse(bookDate));
+        datePicker.setFormats(DATE_FORMAT);
+        try {
+            datePicker.setDate(DATE_FORMAT.parse(bookDate));
+        } catch (ParseException e) {
+            datePicker.setDate(new Date());
+        }
         datePicker.setFont(fieldFont);
         addBookingFrame.add(datePicker, gbc);
 
@@ -256,8 +263,7 @@ public class AdBookingMenu {
         addBookingFrame.add(timeLabel, gbc);
 
         gbc.gridx = 1;
-        SpinnerDateModel timeModel = new SpinnerDateModel();
-        JSpinner timeSpinner = new JSpinner(timeModel);
+        JSpinner timeSpinner = new JSpinner(new SpinnerDateModel());
         JSpinner.DateEditor timeEditor = new JSpinner.DateEditor(timeSpinner, "HH:mm");
         timeSpinner.setEditor(timeEditor);
         timeSpinner.setValue(new Date());
@@ -273,8 +279,12 @@ public class AdBookingMenu {
 
         gbc.gridx = 1;
         JXDatePicker quitDatePicker = new JXDatePicker();
-        quitDatePicker.setFormats("yyyy-MM-dd");
-        quitDatePicker.setDate(formatter.parse(bookDate));
+        quitDatePicker.setFormats(DATE_FORMAT);
+        try {
+            quitDatePicker.setDate(DATE_FORMAT.parse(bookDate));
+        } catch (ParseException e) {
+            quitDatePicker.setDate(new Date());
+        }
         quitDatePicker.setFont(fieldFont);
         addBookingFrame.add(quitDatePicker, gbc);
 
@@ -287,8 +297,6 @@ public class AdBookingMenu {
 
         JButton addButton = new JButton("Добавить бронь");
         addButton.setFont(new Font("Arial", Font.BOLD, 14));
-        addButton.setBackground(new Color(0, 0, 0));
-        addButton.setForeground(Color.BLACK);
         addButton.addActionListener(e -> {
             String name = nameField.getText();
             String roomName = (String) roomComboBox.getSelectedItem();
@@ -331,7 +339,9 @@ public class AdBookingMenu {
 
             String[] bookingDates = getBookingDates(date, Integer.parseInt(duration));
             for (String bookingDate : bookingDates) {
-                int bookid = Integer.parseInt(Bookings.getBookingByDayAndRoom(date, Rooms.getRoomId(roomName))[7]);
+                String x = Bookings.getBookingByDayAndRoom(date, Rooms.getRoomId(roomName))[7];
+                int bookid = Integer.parseInt(x);
+                //int bookid = Integer.parseInt(Bookings.getBookingByDayAndRoom(date, Rooms.getRoomId(roomName))[7]);
                 String[] bookingData = {bookingDate, String.valueOf(Rooms.getRoomId(roomName)), String.valueOf(bookid)};
                 if (!Days.addDates(bookingData)) {
                     JOptionPane.showMessageDialog(addBookingFrame,
@@ -340,7 +350,7 @@ public class AdBookingMenu {
                 }
             }
 
-
+            Interface.updateCalendar();
             addBookingFrame.dispose();
         });
         buttonPanel.add(addButton);
@@ -357,5 +367,22 @@ public class AdBookingMenu {
         addBookingFrame.setLocationRelativeTo(null);
         addBookingFrame.setResizable(false);
         addBookingFrame.setVisible(true);
+    }
+
+    private static void addBookingDates(String[] booking, int roomId) throws Exception {
+        String[] dates = getBookingDates(booking[1], Integer.parseInt(booking[3]));
+        String[] lastBooking = Bookings.getBookingByDayAndRoom(booking[1], roomId);
+
+        if (lastBooking == null || lastBooking[7] == null) {
+            throw new Exception("Не удалось получить ID созданной брони");
+        }
+
+        int bookId = Integer.parseInt(lastBooking[7]);
+        for (String date : dates) {
+            String[] dateData = {date, String.valueOf(roomId), String.valueOf(bookId)};
+            if (!Days.addDates(dateData)) {
+                throw new Exception("Ошибка при добавлении даты брони: " + date);
+            }
+        }
     }
 }
